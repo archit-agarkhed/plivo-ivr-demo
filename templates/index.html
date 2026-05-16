@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>InspireWorks IVR — Call Trigger</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #0f1117;
+      color: #e2e8f0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .card {
+      background: #1a1d27;
+      border: 1px solid #2d3148;
+      border-radius: 12px;
+      padding: 40px 36px;
+      width: 100%;
+      max-width: 420px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    }
+
+    .logo {
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #6c73a8;
+      margin-bottom: 6px;
+    }
+
+    h1 {
+      font-size: 22px;
+      font-weight: 700;
+      color: #ffffff;
+      margin-bottom: 6px;
+    }
+
+    .subtitle {
+      font-size: 14px;
+      color: #6b7280;
+      margin-bottom: 28px;
+    }
+
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 500;
+      color: #9ca3af;
+      margin-bottom: 6px;
+    }
+
+    input[type="tel"] {
+      width: 100%;
+      padding: 12px 14px;
+      background: #0f1117;
+      border: 1px solid #2d3148;
+      border-radius: 8px;
+      color: #e2e8f0;
+      font-size: 15px;
+      outline: none;
+      transition: border-color 0.2s;
+      margin-bottom: 20px;
+    }
+
+    input[type="tel"]:focus {
+      border-color: #6366f1;
+    }
+
+    button {
+      width: 100%;
+      padding: 13px;
+      background: #6366f1;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+    }
+
+    button:hover  { background: #4f52d3; }
+    button:active { transform: scale(0.98); }
+    button:disabled { background: #3a3c5c; cursor: not-allowed; }
+
+    #status {
+      margin-top: 18px;
+      padding: 12px 14px;
+      border-radius: 8px;
+      font-size: 14px;
+      display: none;
+    }
+
+    #status.success {
+      background: #0d2a1f;
+      border: 1px solid #166534;
+      color: #4ade80;
+      display: block;
+    }
+
+    #status.error {
+      background: #2a0d0d;
+      border: 1px solid #7f1d1d;
+      color: #f87171;
+      display: block;
+    }
+
+    #status.loading {
+      background: #1a1d27;
+      border: 1px solid #2d3148;
+      color: #9ca3af;
+      display: block;
+    }
+
+    .note {
+      margin-top: 20px;
+      font-size: 12px;
+      color: #4b5563;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="logo">InspireWorks</div>
+    <h1>IVR Call Trigger</h1>
+    <p class="subtitle">Enter a number to start the automated call flow.</p>
+
+    <label for="phone">Phone Number (with country code)</label>
+    <input
+      type="tel"
+      id="phone"
+      placeholder="+91XXXXXXXXXX"
+      autocomplete="tel"
+    />
+
+    <button id="callBtn" onclick="makeCall()">Call Now</button>
+    <div id="status"></div>
+
+    <p class="note">The call will begin within a few seconds of clicking.</p>
+  </div>
+
+  <script>
+    async function makeCall() {
+      const phone  = document.getElementById("phone").value.trim();
+      const status = document.getElementById("status");
+      const btn    = document.getElementById("callBtn");
+
+      // Basic validation
+      if (!phone) {
+        setStatus("error", "Please enter a phone number.");
+        return;
+      }
+      if (!phone.startsWith("+")) {
+        setStatus("error", "Number must start with + and country code. E.g. +91XXXXXXXXXX");
+        return;
+      }
+
+      // Disable button and show loading
+      btn.disabled = true;
+      setStatus("loading", "Placing call...");
+
+      try {
+        const res = await fetch("/make-call", {
+          method:  "POST",
+          headers: { "Content-Type": "application/json" },
+          body:    JSON.stringify({ to_number: phone })
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+          setStatus("success", "Call placed successfully! Your phone should ring shortly.");
+        } else {
+          setStatus("error", "Error: " + (data.error || "Unknown error"));
+        }
+      } catch (err) {
+        setStatus("error", "Network error — is the Flask server running?");
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    function setStatus(type, message) {
+      const el = document.getElementById("status");
+      el.className = type;
+      el.textContent = message;
+    }
+
+    // Allow pressing Enter to trigger the call
+    document.getElementById("phone").addEventListener("keydown", function(e) {
+      if (e.key === "Enter") makeCall();
+    });
+  </script>
+</body>
+</html>
