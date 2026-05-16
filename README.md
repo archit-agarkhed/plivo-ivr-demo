@@ -217,13 +217,13 @@ Example:
 The provided live associate number is:
 
 ```txt
-02264236412
+02XXXXXX12
 ```
 
 For Plivo, configure it in international format:
 
 ```env
-ASSOCIATE_NUMBER=+912264236412
+ASSOCIATE_NUMBER=+91XXXXXXXX12
 ```
 
 ## Audio Playback
@@ -283,7 +283,7 @@ VALID_OTP=1503
 ### Live associate transfer disconnects
 
 - Confirm `ASSOCIATE_NUMBER` uses international format.
-- For the provided number, use `+912264236412`.
+- For the provided number, use `+91XXXXXXXX12`.
 - Check whether the destination number is reachable from Plivo.
 - Check Plivo logs in the Plivo console for call failure details.
 
