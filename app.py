@@ -255,7 +255,8 @@ def handle_action():
         xml = f"""<?xml version="1.0" encoding="UTF-8"?>
 <Response>
     <Speak voice="WOMAN" language="{speak_lang}">{connecting}</Speak>
-    <Dial>
+    <Wait length="1"/>
+    <Dial action="{BASE_URL}/call-ended?lang={lang}" method="POST" timeout="30" callerId="{PLIVO_FROM_NUMBER}" dialMusic="real">
         <Number>{ASSOCIATE_NUMBER}</Number>
     </Dial>
 </Response>"""
@@ -270,5 +271,51 @@ def handle_action():
 
 
 # ── Entry Point ───────────────────────────────────────────
+@app.route("/call-ended", methods=["POST", "GET"])
+def call_ended():
+    """
+    Handles the result of the live-associate Dial attempt.
+    Plivo posts DialStatus here after the bridge completes or fails.
+    """
+    lang = request.args.get("lang", "en")
+    status = request.values.get("DialStatus", "").lower()
+    cause = request.values.get("DialHangupCause", "")
+    ring_status = request.values.get("DialRingStatus", "")
+
+    print(
+        f"[LIVE_ASSOCIATE_DIAL] status={status or 'missing'} "
+        f"ring_status={ring_status or 'missing'} "
+        f"cause={cause or 'missing'}"
+    )
+    app.logger.info(
+        "Live associate dial ended: status=%s ring_status=%s cause=%s",
+        status,
+        ring_status,
+        cause,
+    )
+
+    if status == "completed":
+        if lang == "es":
+            message = "Gracias por llamar a InspireWorks. Hasta luego."
+            speak_lang = "es-ES"
+        else:
+            message = "Thank you for calling InspireWorks. Goodbye."
+            speak_lang = "en-US"
+    else:
+        if lang == "es":
+            message = "Lo sentimos. No pudimos conectar con un asociado en este momento. Hasta luego."
+            speak_lang = "es-ES"
+        else:
+            message = "Sorry, we could not connect you to a live associate at this time. Goodbye."
+            speak_lang = "en-US"
+
+    xml = f"""<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+    <Speak voice="WOMAN" language="{speak_lang}">{message}</Speak>
+    <Hangup/>
+</Response>"""
+    return xml_response(xml)
+
+
 if __name__ == "__main__":
     app.run(debug=True, port=5000)
